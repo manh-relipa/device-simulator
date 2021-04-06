@@ -1,8 +1,9 @@
 #include "dtusimulator.h"
-#include "DtuFrame.h"
+
 
 #include <QDateTime>
 
+uint16_t DtuSimulator::sequenceID = 0;
 DtuSimulator::DtuSimulator(QObject *parent)
 {
     QObject::connect(&realtimeDataTimer, &QTimer::timeout, this, &DtuSimulator::sendRealtimeData);
@@ -84,14 +85,7 @@ void DtuSimulator::handleStartRequest()
     startResponseData->serialNumber->val.swap(serial);
 
     startRequestResponse.setData(startResponseData);
-
-    auto buffer = startRequestResponse.getBuffer();
-
-    auto checksum = IParsingStruct::calcCheckSumETC(buffer.data() + 1, buffer.size() - 3);
-    buffer[buffer.size()-2] = checksum;
-
-    emit messageReady("DTU1_PROTOCOL", "DTU1_DEVICE",
-                      std::string(reinterpret_cast<const char *>(buffer.data()), buffer.size()));
+    packAndSend(startRequestResponse);
 
     currentState = DTU_GOT_START_REQUEST;
 }
@@ -106,14 +100,7 @@ void DtuSimulator::handleStatusRequestForStart()
     auto data = std::make_shared<BasicType<uint8_t>>();
     data->val = 0x00;
     statusResponse.setData(data);
-
-    auto buffer = statusResponse.getBuffer();
-
-    auto checksum = IParsingStruct::calcCheckSumETC(buffer.data() + 1, buffer.size() - 3);
-    buffer[buffer.size()-2] = checksum;
-
-    emit messageReady("DTU1_PROTOCOL", "DTU1_DEVICE",
-                      std::string(reinterpret_cast<const char *>(buffer.data()), buffer.size()));
+    packAndSend(statusResponse);
 
     currentState = DTU_GOT_START_STATUS_REQUEST;
     realtimeDataTimer.start();
@@ -129,14 +116,7 @@ void DtuSimulator::handleStatusRequestForStop()
     auto data = std::make_shared<BasicType<uint8_t>>();
     data->val = 0x01;
     statusResponse.setData(data);
-
-    auto buffer = statusResponse.getBuffer();
-
-    auto checksum = IParsingStruct::calcCheckSumETC(buffer.data() + 1, buffer.size() - 3);
-    buffer[buffer.size()-2] = checksum;
-
-    emit messageReady("DTU1_PROTOCOL", "DTU1_DEVICE",
-                      std::string(reinterpret_cast<const char *>(buffer.data()), buffer.size()));
+    packAndSend(statusResponse);
 
     currentState = DTU_REALTIME_DATA;
 
@@ -152,14 +132,7 @@ void DtuSimulator::handleConfirmStartRequest()
     auto data = std::make_shared<BasicType<uint8_t>>();
     data->val = 0x06;
     confirmStartReponse.setData(data);
-
-    auto buffer = confirmStartReponse.getBuffer();
-
-    auto checksum = IParsingStruct::calcCheckSumETC(buffer.data() + 1, buffer.size() - 3);
-    buffer[buffer.size()-2] = checksum;
-
-    emit messageReady("DTU1_PROTOCOL", "DTU1_DEVICE",
-                      std::string(reinterpret_cast<const char *>(buffer.data()), buffer.size()));
+    packAndSend(confirmStartReponse);
 
 }
 
@@ -173,14 +146,7 @@ void DtuSimulator::handleConfirmStopRequeset()
     auto data = std::make_shared<BasicType<uint8_t>>();
     data->val = 0x06;
     confirmStartReponse.setData(data);
-
-    auto buffer = confirmStartReponse.getBuffer();
-
-    auto checksum = IParsingStruct::calcCheckSumETC(buffer.data() + 1, buffer.size() - 3);
-    buffer[buffer.size()-2] = checksum;
-
-    emit messageReady("DTU1_PROTOCOL", "DTU1_DEVICE",
-                      std::string(reinterpret_cast<const char *>(buffer.data()), buffer.size()));
+    packAndSend(confirmStartReponse);
 }
 
 void DtuSimulator::sendRealtimeData()
@@ -221,16 +187,30 @@ void DtuSimulator::sendRealtimeData()
                realtimeData->runningInfoData->val.begin());
 
     realtimeDataFrame.setData(realtimeData);
-    auto buffer = realtimeDataFrame.getBuffer();
+    packAndSend(realtimeDataFrame);
+}
+
+void DtuSimulator::handleSpeedChanged(float speed)
+{
+    currentSpeed = speed;
+}
+
+void DtuSimulator::packAndSend(DtuFrame &frame)
+{
+    uint16_t datasize = frame.data->getSize();
+    frame.header->val.dataSize[0] =  (uint8_t) (datasize & 0xff);
+    frame.header->val.dataSize[1] =  (uint8_t) ((datasize >> 8) & 0xff);
+
+    frame.header->val.seqNumber[0] =  (uint8_t) (sequenceID & 0xff);
+    frame.header->val.seqNumber[1] =  (uint8_t) ((sequenceID >> 8) & 0xff);
+
+    sequenceID++;
+
+    auto buffer = frame.getBuffer();
 
     auto checksum = IParsingStruct::calcCheckSumETC(buffer.data() + 1, buffer.size() - 3);
     buffer[buffer.size()-2] = checksum;
 
     emit messageReady("DTU1_PROTOCOL", "DTU1_DEVICE",
                       std::string(reinterpret_cast<const char *>(buffer.data()), buffer.size()));
-}
-
-void DtuSimulator::handleSpeedChanged(float speed)
-{
-    currentSpeed = speed;
 }

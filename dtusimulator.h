@@ -4,6 +4,7 @@
 #include "Interfaces/iMessageHandler.h"
 #include "Interfaces/iMessageProvider.h"
 #include "Interfaces/iSetting.h"
+#include "DtuFrame.h"
 
 #include <QObject>
 #include <QTimer>
@@ -44,12 +45,14 @@ public:
     void sendRealtimeData();
 
     Q_INVOKABLE void handleSpeedChanged(float speed);
+    void packAndSend(DtuFrame & frame);
 
 private:
     float currentSpeed;
     DtuState currentState{DTU_IDLE};
 
     QTimer realtimeDataTimer;
+    static uint16_t sequenceID;
 
 };
 
