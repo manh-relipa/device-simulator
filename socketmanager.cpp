@@ -58,9 +58,9 @@ void SocketManager::sendMessage(const std::string &source, const std::string &de
 
     qInfo() << hexBuffer;
 
-    emit textChanged(QString(hexBuffer) + "\n");
+    emit textChanged(hexBuffer + "\n");
 
-    qInfo() << "Sending: " << QString(hexBuffer) << " from: " << QString::fromStdString(source);
+    qInfo() << "Sending: " << hexBuffer << " from: " << QString::fromStdString(source);
 
     auto ret = localSocket->write(block);
     qInfo() << "Written: " << ret << " bytes";

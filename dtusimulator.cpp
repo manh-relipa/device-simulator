@@ -88,6 +88,8 @@ void DtuSimulator::handleStartRequest()
     packAndSend(startRequestResponse);
 
     currentState = DTU_GOT_START_REQUEST;
+
+    emit textChanged("State: Got start request\n");
 }
 
 void DtuSimulator::handleStatusRequestForStart()
@@ -103,7 +105,9 @@ void DtuSimulator::handleStatusRequestForStart()
     packAndSend(statusResponse);
 
     currentState = DTU_GOT_START_STATUS_REQUEST;
-    realtimeDataTimer.start();
+
+    emit textChanged("State: Got start status request\n");
+    
 }
 
 void DtuSimulator::handleStatusRequestForStop()
@@ -118,8 +122,9 @@ void DtuSimulator::handleStatusRequestForStop()
     statusResponse.setData(data);
     packAndSend(statusResponse);
 
-    currentState = DTU_REALTIME_DATA;
-
+   
+    currentState = DUT_GOT_STOP_STATUS_REQUEST;
+    emit textChanged("State: Got stop status request\n");
 }
 
 void DtuSimulator::handleConfirmStartRequest()
@@ -134,6 +139,10 @@ void DtuSimulator::handleConfirmStartRequest()
     confirmStartReponse.setData(data);
     packAndSend(confirmStartReponse);
 
+    emit textChanged("State: Got confirm start, Start realtime Data\n");
+    realtimeDataTimer.start();
+
+    currentState = DTU_REALTIME_DATA;
 }
 
 void DtuSimulator::handleConfirmStopRequeset()
@@ -153,8 +162,8 @@ void DtuSimulator::sendRealtimeData()
 {
     DtuFrame realtimeDataFrame;
 
-    realtimeDataFrame.header->val.commandId[0] = DTU_LAST_MINUTE_DATA_REP_COMMAND_1;
-    realtimeDataFrame.header->val.commandId[1] = DTU_LAST_MINUTE_DATA_REP_COMMAND_2;
+    realtimeDataFrame.header->val.commandId[0] = DTU_REALTIME_DATA_COMMAND_1;
+    realtimeDataFrame.header->val.commandId[1] = DTU_REALTIME_DATA_COMMAND_2;
 
     auto realtimeData = std::make_shared<Dtu1RunningInfo>();
     Dtu1Time timeData;
@@ -170,18 +179,25 @@ void DtuSimulator::sendRealtimeData()
     timeData.second = currentTime.time().second();
     timeData.subsecond = 0;
 
+    qInfo() << "Time: " << QString(QString("%1/%2/%3 %4:%5:%6").arg(year).arg(timeData.month).arg(timeData.date)
+                                               .arg(timeData.hour).arg(timeData.minute).arg(timeData.second));
+
     std::copy((uint8_t*) &timeData, (uint8_t*) &timeData + sizeof(Dtu1Time),
                realtimeData->time->val.begin());
 
     Dtu1RunningInfoData runData;
     runData.speed1 = currentSpeed;
-    int distance = (currentSpeed * 1e5) / 7200;
+    uint16_t distance = (uint16_t) ((currentSpeed * 1e2) / 7.2);
     runData.distance1[0] = (uint8_t) (distance & 0xff);
-    runData.distance1[0] = (uint8_t) ((distance >> 8) & 0xff);
+    runData.distance1[1] = (uint8_t) ((distance >> 8) & 0xff);
 
     runData.speed2 = currentSpeed;
     runData.distance2[0] = runData.distance1[0];
     runData.distance2[1] = runData.distance1[1];
+
+    qInfo() << "Time: " << QString("%1/%2/%3 %4:%5:%6").arg(year).arg(timeData.month).arg(timeData.date)
+                                               .arg(timeData.hour).arg(timeData.minute).arg(timeData.second)
+            << ", Speed: " << runData.speed1 << " Distance1: " << distance << ", Distance2: " << distance;
 
     std::copy((uint8_t*) &runData, (uint8_t*) &runData + sizeof(Dtu1RunningInfoData),
                realtimeData->runningInfoData->val.begin());
@@ -193,6 +209,8 @@ void DtuSimulator::sendRealtimeData()
 void DtuSimulator::handleSpeedChanged(float speed)
 {
     currentSpeed = speed;
+    // emit textChanged(QString("Speed changed: ") + speed);
+    qInfo() << "Speed changed: " << speed;
 }
 
 void DtuSimulator::packAndSend(DtuFrame &frame)

@@ -15,10 +15,14 @@ Window {
         y: 12
         stepSize: 1
         to: 255
-        value: 20
+        value: 0
         onValueChanged: {
             dtuSimulator.handleSpeedChanged(value)
             text1.text = "Speed: " + value
+        }
+
+        Component.onCompleted: {
+            dtuSimulator.handleSpeedChanged(value)
         }
     }
 
@@ -41,10 +45,20 @@ Window {
 
     }
 
+    Connections {
+        target: dtuSimulator
+        onTextChanged: {
+            textArea.text = textArea.text + text
+        }
+
+
+    }
+
     Button {
         id: button
         x: 46
-        y: 440
+        anchors.top: rectangle.bottom
+        anchors.topMargin: 20
         width: 93
         height: 24
         text: qsTr("Clear")
@@ -53,19 +67,27 @@ Window {
         }
     }
 
+
+
     Rectangle {
         id: rectangle
         x: 28
         y: 51
-        width: 585
-        height: 377
+        width: parent.width - 60
+        height: parent.height - 120
         color: "#ffffff"
         border.width: 2
 
-        TextArea {
-            id: textArea
-            text: qsTr("Text Area")
+        Flickable {
+            id: flickable
             anchors.fill: parent
+
+            TextArea.flickable: TextArea {
+                id: textArea
+                wrapMode: TextArea.Wrap
+            }
+
+            ScrollBar.vertical: ScrollBar { }
         }
     }
 }

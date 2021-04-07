@@ -29,7 +29,7 @@ public:
 
 signals:
 
-
+    void textChanged(QString text);
 
 
     // iMessageHandler interface

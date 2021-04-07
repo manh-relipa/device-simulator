@@ -178,11 +178,11 @@ public:
                 data = std::make_shared<BasicType<Dtu1StartRequest>>();
             }
 
-            else if (commandId1 == DTU1_STOP_REQUEST_COMMAND_1 && commandId2 == DTU1_STOP_REQUEST_COMMAND_1) {
+            else if (commandId1 == DTU1_STOP_REQUEST_COMMAND_1 && commandId2 == DTU1_STOP_REQUEST_COMMAND_2) {
                 data = std::make_shared<Dtu1StartStopRequest>();
             }
 
-            else if (commandId1 == DTU_LAST_MINUTE_DATA_COMMAND_1 && commandId2 == DTU_LAST_MINUTE_DATA_COMMAND_1) {
+            else if (commandId1 == DTU_LAST_MINUTE_DATA_COMMAND_1 && commandId2 == DTU_LAST_MINUTE_DATA_COMMAND_2) {
 
                 data = std::make_shared<BasicType<Dtu1LastMinuteDataRequest>>();
 
