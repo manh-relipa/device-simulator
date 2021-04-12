@@ -73,3 +73,5 @@ Thumbs.db
 
 # Build folder
 build/
+*.user*
+.idea
